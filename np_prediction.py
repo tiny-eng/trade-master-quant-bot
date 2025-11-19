@@ -3,6 +3,9 @@ from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
 import torch
 import torch.nn as nn
+import random
+import matplotlib.pyplot as plt
+
 
 class LSTMModel(nn.Module):
     def __init__(self, input_size=5, hidden_size=50,  output_size=1):
@@ -23,7 +26,12 @@ class LSTMModel(nn.Module):
         return out
 
 model_nq = LSTMModel()  
-state= torch.load("model/NQ_predict_best.pt" , weights_only= False )
+
+
+# state= torch.load("model/NQ_predict_best.pt" , weights_only= False )
+
+state = torch.load("model/NQ_predict_best.pt", map_location=torch.device('cpu'), weights_only=False)
+
 model_nq.load_state_dict(state)
 
 def predict(input , model):
@@ -47,5 +55,18 @@ def predict(input , model):
 
 # ["Open" ,"High" ,"Low" ,"Close" ,"Volume"]  5 min period of 60 days data
 #  60 * 24 * 60 / 5 = 17280
-input = [[1,2,3,4 + j * 0.001,5] for j in range(17280)] 
-print(predict(input, model_nq))
+
+
+input_data = [[1,2,3,4 + j * random.randint(1, 10) * 0.001,5] for j in range(17280)] 
+
+print(predict(input_data, model_nq))
+
+# close_prices = [row[3] for row in input_data]
+
+# plt.figure(figsize=(14, 6))
+# plt.plot(close_prices)
+# plt.title("Close Price Graph")
+# plt.xlabel("Time (5-min steps)")
+# plt.ylabel("Close Price")
+# plt.grid(True)
+# plt.show()
