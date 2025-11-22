@@ -5,6 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 import numpy as np
 import torch.nn as nn
 from torch.utils.data import TensorDataset, DataLoader
+import matplotlib.pyplot as plt
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -22,16 +23,40 @@ df['time'] = pd.to_datetime(df['ts'], unit='s')
 df = df.sort_values('time')
 
 data = df['c'].values.reshape(-1, 1) # 2D input
+time = df['time'].values.reshape(-1, 1)
 
 scaler = MinMaxScaler()
 data_scaled = scaler.fit_transform(data)
 
 # INPUT_LEN = 60 * 24 * 15 # 1440 * 15 = 21600
-INPUT_LEN = 60 * 3
- 
-
+INPUT_LEN = 60 * 5
 PRED_INDEX = [1, 5, 15, 30, 60]
 
+def create_sequence(data, input_len, pred_index):
+    X, y = [], []
+    for i in range(len(data) - input_len - 60):
+        X.append(data[i: i + input_len])
+
+        y_sub = []
+        for j in pred_index:
+            y_sub.append(data[i + input_len + j - 1])
+
+        y.append(np.array(y_sub).reshape(-1))
+
+    return np.array(X), np.array(y).reshape(len(y), len(pred_index))
+
+X, y = create_sequence(data_scaled, INPUT_LEN, PRED_INDEX)
+print("X:", X.shape, "Y:", y.shape)
+
+# Train/test split
+split = int(len(X) * 0.95)
+X_train, X_test = X[:split], X[split:]
+y_train, y_test = y[:split], y[split:]
+
+X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+y_test = torch.tensor(y_test, dtype=torch.float32).to(device)
+
+batch_size = 512
 
 class LSTMModel(nn.Module):
     def __init__(self):
@@ -74,15 +99,45 @@ class LSTMModel(nn.Module):
 
 model = LSTMModel().to(device)
 
-MODEL_PATH = "./model/new_model.pt"
-torch.save(model.state_dict(), MODEL_PATH)
+model = LSTMModel()
+model.load_state_dict(torch.load("./model/new_3_model.pt", map_location=device))
+model.eval()
 
-print(f"Model saved to {MODEL_PATH}")
+with torch.no_grad():
+    y_pred = model(X_test)
 
-last_seq = data_scaled[-INPUT_LEN:]
-last_seq = torch.tensor(last_seq, dtype=torch.float32).unsqueeze(0).to(device)
+print("Pred shape:", y_pred.shape)
+print("True shape:", y_test.shape)
 
-future_scaled = model(last_seq).detach().cpu().numpy().reshape(-1, 1)
-future = scaler.inverse_transform(future_scaled)
+mse = torch.mean((y_pred - y_test) ** 2).item()
 
-print(future)
+print("MSE:", mse)
+
+mse_per_index = {}
+
+for i, h in enumerate(PRED_INDEX):
+    mse_h = torch.mean((y_pred[:, i] - y_test[:, i]) ** 2).item()
+    mse_per_index[h] = mse_h
+
+print("MSE per index")
+for h, val in mse_per_index.items():
+    print(f" {h} min: {val}")
+
+y_test_np = y_test.cpu().numpy()
+y_pred_np = y_pred.cpu().numpy()
+
+y_test_inv = scaler.inverse_transform(y_test_np)
+y_pred_inv = scaler.inverse_transform(y_pred_np)
+
+
+plt.figure(figsize=(14, 12))
+
+for i, h in enumerate(PRED_INDEX):
+    plt.subplot(len(PRED_INDEX), 1, i+1)
+    plt.plot(y_test_inv[:, i], label="True")
+    plt.plot(y_pred_inv[:, i], label="Predicted")
+    plt.title(f"{h}-minute Prediction")
+    plt.legend()
+
+plt.tight_layout()
+plt.show()

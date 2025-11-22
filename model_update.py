@@ -15,7 +15,7 @@ DATABASE_URL = "postgresql://postgres:123456789@localhost/trader_master"
 
 engine = create_engine(DATABASE_URL)
 
-df = pd.read_sql("SELECT * FROM candle_a_minute;", engine)
+df = pd.read_sql("SELECT * FROM candle_amd_minute;", engine)
 
 df['time'] = pd.to_datetime(df['ts'], unit='s')
 
@@ -27,9 +27,8 @@ scaler = MinMaxScaler()
 data_scaled = scaler.fit_transform(data)
 
 # INPUT_LEN = 60 * 24 * 15 # 1440 * 15 = 21600
-INPUT_LEN = 60 * 3
+INPUT_LEN = 60 * 5
  
-
 PRED_INDEX = [1, 5, 15, 30, 60]
 
 def create_sequence(data, input_len, pred_index):
@@ -41,9 +40,9 @@ def create_sequence(data, input_len, pred_index):
         for j in pred_index:
             y_sub.append(data[i + input_len + j - 1])
 
-        y.append(y_sub)
+        y.append(np.array(y_sub).reshape(-1))
 
-    return np.array(X), np.array(y)
+    return np.array(X), np.array(y).reshape(len(y), len(pred_index))
 
 X, y = create_sequence(data_scaled, INPUT_LEN, PRED_INDEX)
 print("X:", X.shape, "Y:", y.shape)
@@ -107,7 +106,7 @@ criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 # Training
-EPOCHS = 2
+EPOCHS = 10
 
 for epoch in range(EPOCHS):
     model.train()
@@ -116,17 +115,17 @@ for epoch in range(EPOCHS):
         optimizer.zero_grad()
 
         y_pred = model(batch_x)
-        loss = criterion(y_pred, batch_y.reshape(y_pred.shape))
+        loss = criterion(y_pred, batch_y)
         loss.backward()
         optimizer.step()
 
-    if epoch % 2 == 0:
-        print(f"Epoch {epoch}/{EPOCHS} Loss: {loss.item():.6f}")
+
+    print(f"Epoch {epoch}/{EPOCHS} Loss: {loss.item():.6f}")
 
 # Predict
 model.eval()
 
-MODEL_PATH = "./model/new_model.pt"
+MODEL_PATH = "./model/amd_model.pt"
 torch.save(model.state_dict(), MODEL_PATH)
 
 print(f"Model saved to {MODEL_PATH}")
