@@ -1,4 +1,0 @@
-# trade-master-quant-bot
-
-
-
