@@ -32,6 +32,12 @@ async def predict_live_price(symbol: str, target: int):
 
     # 6) Extract specific prediction
     idx = PRED_INDEX.index(target)
+    # print(y_pred)
+    # for i in range (5):
+    #     predicted_scaled = y_pred[i].reshape(-1, 1)
+    #     predicted_price = scaler.inverse_transform(predicted_scaled)[0][0]
+    #     print(predicted_price)
+
     predicted_scaled = y_pred[idx].reshape(-1, 1)
 
     # 7) Inverse transform to original scale
