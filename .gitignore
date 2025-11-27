@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 /model
+/model_train
 
 # testing
 /coverage
