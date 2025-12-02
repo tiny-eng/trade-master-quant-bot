@@ -15,6 +15,7 @@ async def predict_live_price(symbol: str):
 
     prices = get_last_n_minutes(symbol, INPUT_LEN)
     prices = np.array(prices).reshape(-1, 1)
+    # print(prices)
 
     scaler = MinMaxScaler()
     scaled = scaler.fit_transform(prices)  # 
@@ -35,13 +36,8 @@ async def predict_live_price(symbol: str):
     
     print(predicted_price)
 
-    # predicted_scaled = y_pred[idx].reshape(-1, 1)
-
-    # 7) Inverse transform to original scale
-    # predicted_price = scaler.inverse_transform(predicted_scaled)[0][0]
-
     return {
         "symbol": symbol,
-        # "target_min": target,
+        "last_price": prices[299, 0],
         "prediction": predicted_price
     }
