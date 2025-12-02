@@ -1,8 +1,7 @@
 import requests
-from app.config.settings import POLYGON_API_KEY
+from app.config.settings import POLYGON_API_KEY, BASE_PORIGON_URL
 import datetime
 
-BASE_URL = "https://api.polygon.io/v2/aggs/ticker"
 
 def get_last_n_minutes(symbol: str, input_len: int):
     symbol = symbol.upper()
@@ -11,7 +10,7 @@ def get_last_n_minutes(symbol: str, input_len: int):
     days_back = 0
     while len(candles) < input_len:
         day = (datetime.datetime.now() - datetime.timedelta(days=days_back)).strftime("%Y-%m-%d")
-        url = f"{BASE_URL}/{symbol}/range/1/minute/{day}/{day}"
+        url = f"{BASE_PORIGON_URL}/{symbol}/range/1/minute/{day}/{day}"
         params = {
             "adjusted": "true",
             "sort": "desc",  # newest first
