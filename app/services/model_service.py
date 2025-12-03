@@ -9,22 +9,41 @@ MODEL_CACHE = {}
 
 class LSTMModel(nn.Module):
     def __init__(self):
-        super().__init__()
-        self.lstm1 = nn.LSTM(1, 50, batch_first=True)
+        super(LSTMModel, self).__init__()
+
+        self.lstm1 = nn.LSTM(
+            input_size = 5,
+            hidden_size = 64,
+            num_layers = 1,
+            batch_first = True
+        )
+
         self.dropout1 = nn.Dropout(0.2)
-        self.lstm2 = nn.LSTM(50, 50, batch_first=True)
+
+        self.lstm2 = nn.LSTM(
+            input_size = 64,
+            hidden_size = 64,
+            num_layers = 1,
+            batch_first = True
+        )
+
         self.dropout2 = nn.Dropout(0.2)
-        self.fc1 = nn.Linear(50, 25)
-        self.fc2 = nn.Linear(25, len(PRED_INDEX))
+
+        self.fc1 = nn.Linear(64, 32)
+        self.fc2 = nn.Linear(32, 12)
 
     def forward(self, x):
         x, _ = self.lstm1(x)
         x = self.dropout1(x)
+
         x, _ = self.lstm2(x)
         x = self.dropout2(x)
+
         x = x[:, -1, :]
         x = self.fc1(x)
-        return self.fc2(x)
+        x = self.fc2(x)
+
+        return x
 
 
 def load_model(symbol: str):

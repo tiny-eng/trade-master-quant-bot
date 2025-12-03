@@ -2,6 +2,6 @@ import torch
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-PRED_INDEX = [1, 5, 15, 30, 60]
+PRED_INDEX = list(range(1, 13))
 
-INPUT_LEN = 60 * 5
+INPUT_LEN = 300
